@@ -13,7 +13,7 @@ entity dataPath is
         ld1      : IN std_logic;
         ld2      : IN std_logic;
         ld3      : IN std_logic;
-        mux_ctrl : IN std_logic_vector(1 downto 0);
+        mux_ctrl : IN std_logic_vector(2 downto 0);
         alu_ctrl : IN alu_mode;
         r2in     : in  TData;
         r3in     : in  TData;
@@ -59,7 +59,7 @@ begin
 
   mux : process(mux_ctrl, r0, r1, r2, r3, pcin)
   begin
-    case 00 & mux_ctrl is
+    case 0 & mux_ctrl is
       when R0     => alu_in <= r0;
       when R1     => alu_in <= r1;
       when R2     => alu_in <= r2;
@@ -71,12 +71,12 @@ begin
   alu : process(alu_ctrl, alu_in) 
   begin
     case alu_ctrl is 
-      when  TESTZERO  => if alu_in = x"0" then alu_out <= x"1";
-                         else alu_out <= x"0";
-                         end if;
-      when  INC       => alu_out <= alu_in + '1';
-      when  DEC       => alu_out <= alu_in - '1';
-      when  TRANSFER  => alu_out <= alu_in;
+      when  A_TZ    => if alu_in = x"0" then alu_out <= x"1";
+                       else alu_out <= x"0";
+                       end if;
+      when  A_INC   => alu_out <= alu_in + '1';
+      when  A_DEC   => alu_out <= alu_in - '1';
+      when  A_TRAN  => alu_out <= alu_in;
     end case;
   end process alu;
 
