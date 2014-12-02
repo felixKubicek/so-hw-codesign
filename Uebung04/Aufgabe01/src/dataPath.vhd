@@ -22,14 +22,14 @@ entity dataPath is
         r1out    : out TData;
         r2out    : out TData;
         r3out    : out TData;
-        alu_out  : buffer TData
-        --Zout     : OUT std_logic
+        alu      : out TData;
+        Zout     : OUT std_logic
       );
 end dataPath;
 
-
 signal r0, r1, r2, r3 : TData;
-signal alu_in : TData;
+signal alu_in, alu_out : TData;
+signal z_flag : std_logic;
 
 architecture behv of dataPath is
 begin
@@ -70,19 +70,31 @@ begin
 
   alu : process(alu_ctrl, alu_in) 
   begin
-    case alu_ctrl is 
-      when  A_TZ    => if alu_in = x"0" then alu_out <= x"1";
-                       else alu_out <= x"0";
-                       end if;
-      when  A_INC   => alu_out <= alu_in + '1';
-      when  A_DEC   => alu_out <= alu_in - '1';
-      when  A_TRAN  => alu_out <= alu_in;
+    case alu_ctrl is
+      when  A_INC  => alu_out <= alu_in + '1';
+      when  A_DEC  => alu_out <= alu_in - '1';
+      when  A_TRAN => alu_out <= alu_in;
     end case;
   end process alu;
-
+  
+  status_reg : process(clk, reset)
+  begin
+    if reset = '1' then   
+      z_flag <= '0'; 
+    elsif rising_edge(clk) then
+      if alu_out = x"0" then
+        z_flag <= '1';
+      else
+        z_flag <= '0';
+      end if;
+    end if;
+  end process status_reg; 
+  
+  
+  Zout <= z_flag;
+  alu <= alu_out;
   (r0out, r1out, r2out, r3out) <= (r0, r1, r2, r3);
-
-
+  
 end behv;
 
 

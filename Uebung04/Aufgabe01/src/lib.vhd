@@ -20,7 +20,7 @@ package lib is
 	subtype TProgAddr is std_logic_vector(WIDTH - 1 downto 0);
 	subtype TData is std_logic_vector(WIDTH - 1 downto 0);
   
-  type alu_mode is (A_TZ, A_INC, A_DEC, A_TRAN);	
+  type alu_mode is (A_INC, A_DEC, A_TRAN);	
 	
 end package lib;
 
