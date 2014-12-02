@@ -15,6 +15,9 @@ package lib is
 	constant R1   : std_logic_vector(3 downto 0) := "0001";
 	constant R2   : std_logic_vector(3 downto 0) := "0010";
 	constant R3   : std_logic_vector(3 downto 0) := "0011";
+  
+  -- mux control signal
+  constant PC_IN :  std_logic_vector(2 downto 0) := "100";
 	
 	subtype TInstruction is std_logic_vector(WIDTH - 1 downto 0);
 	subtype TProgAddr is std_logic_vector(WIDTH - 1 downto 0);

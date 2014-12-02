@@ -34,7 +34,7 @@ type pc_mode is (PC_ALU_IN, PC_MEM_IN);
 signal pc_ctrl : pc_mode; 
 signal pc_ce, ir_ce : std_logic;
 
-signal timer_val : std_logic_vector(3 downto 0);
+signal timer_val : std_logic_vector(1 downto 0);
 type timer_mode is (T_INC, T_LOAD);
 signal timer_ctrl : timer_mode;
 
@@ -66,7 +66,7 @@ begin
       ir_ce <= '1';
       -- PC = PC + 1;
       pc_ce <= '1';
-      mux_ctrl <= "100";
+      mux_ctrl <= PC_IN;
       alu_ctrl <= A_INC;
     
     -- execute 1 
@@ -131,7 +131,7 @@ begin
                        else
                          -- PC = PC + 1;
                          pc_ce <= '1';
-                         mux_ctrl <= "100";
+                         mux_ctrl <= PC_IN;
                          alu_ctrl <= A_INC;
                        end if;
                        -- return to fetch1‚
@@ -144,7 +144,7 @@ begin
                        else
                          -- PC = PC + 1;
                          pc_ce <= '1';
-                         mux_ctrl <= "100";
+                         mux_ctrl <= PC_IN;
                          alu_ctrl <= A_INC;
                        end if;
                        -- return to fetch1‚

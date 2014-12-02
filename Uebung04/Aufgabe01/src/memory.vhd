@@ -13,7 +13,6 @@ entity pMemory is
         --clk    : IN std_logic;
         reset  : IN std_logic;
         inAddr : IN TProgAddr;
-        
         instruction : OUT TInstruction
       );
 end pMemory;
