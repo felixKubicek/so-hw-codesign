@@ -20,7 +20,8 @@ entity ctrlPath is
         ld2    : OUT std_logic;
         ld3    : OUT std_logic;
         mux_ctrl : OUT std_logic_vector(2 downto 0);
-        alu_ctrl : OUT alu_mode
+        alu_ctrl : OUT alu_mode;
+        timer_out : OUT std_logic_vector(1 downto 0)
       );
 end ctrlPath;
 
@@ -34,16 +35,25 @@ type pc_mode is (PC_ALU_IN, PC_MEM_IN);
 signal pc_ctrl : pc_mode; 
 signal pc_ce, ir_ce : std_logic;
 
-signal timer_val : std_logic_vector(1 downto 0);
+signal timer : std_logic_vector(1 downto 0);
 type timer_mode is (T_INC, T_LOAD);
 signal timer_ctrl : timer_mode;
 
 begin
 
-  fsm_cu : process(state)
+  fsm_cu : process(timer, ir, Zin)
+    constant JMP_CHOICE : std_logic_vector(3 downto 0) := "1000";
+    constant JZ_CHOICE  : std_logic_vector(3 downto 0) := "1001";
+    constant JNZ_CHOICE : std_logic_vector(3 downto 0) := "1010";
+    constant INC_CHOICE : std_logic_vector(3 downto 0) := "0001";
+    constant DEC_CHOICE : std_logic_vector(3 downto 0) := "0010";
   begin
+    
     -- default: hold register values
-    (ld0,ld1,ld2,ld3) <= ('0', '0', '0', '0');
+    ld0 <= '0';
+    ld1 <= '0';
+    ld2 <= '0';
+    ld3 <= '0';
     -- default: increment timer
     timer_ctrl <= T_INC;
     -- default: PC receives output values of the ALU
@@ -58,7 +68,7 @@ begin
     -- fetch 1
     if timer = x"0" then
       -- MAR <= PC;
-      mux_ctrl <= "----";
+      mux_ctrl <= "---";
     
     -- fetch 2  
     elsif timer = x"1" then
@@ -70,85 +80,109 @@ begin
       alu_ctrl <= A_INC;
     
     -- execute 1 
-    elsif timer = x"2"  
-      case ir (7 downto 4) is         
+    elsif timer = x"2" then 
+      case ir(7 downto 4) is         
+         
         -- jmp1
-        when JMP =>   -- MAR <= PC;
-                      mux_ctrl <= "---"
+                           -- MAR <= PC;
+        when JMP_CHOICE => mux_ctrl <= "---";
+                           -- bad instruction
+                           if ir(3 downto 0) /= "0000" then
+                             timer_ctrl <= T_LOAD;
+                           end if;
                       
         -- jz1
-        when JZ  =>    -- MAR <= PC;
-                       -- set z_flag
-                       mux_ctrl <= ir (2 downto 0);
+                            -- MAR <= PC;
+                            -- set z_flag
+        when JZ_CHOICE  => mux_ctrl <= ir (2 downto 0);
                                       
+         
         -- jnz1
-        when JNZ =>    -- MAR <= PC;
-                       -- set z_flag
-                       mux_ctrl <= ir (2 downto 0);
+                              -- MAR <= PC;
+                              -- set z_flag
+        when JNZ_CHOICE => mux_ctrl <= ir (2 downto 0);
         
-        -- inc1
-        when INC =>    -- MAR <= PC;
-                       -- increment
-                       mux_ctrl <= ir (2 downto 0);
-                       alu_ctrl <= A_INC;
-                       -- write back result
-                       if    ir(3 downto 0) = R0 then ld0 <= '1';
-                       elsif ir(3 downto 0) = R1 then ld1 <= '1';
-                       elsif ir(3 downto 0) = R2 then ld2 <= '1';
-                       elsif ir(3 downto 0) = R3 then ld3 <= '1';  
-                       end if;
-                       -- return to fetch1
-                       timer_ctrl <= T_LOAD;    
+        -- inc1              -- MAR <= PC;
+                             -- increment
+        when INC_CHOICE => mux_ctrl <= ir (2 downto 0);
+                           alu_ctrl <= A_INC;
+                           -- write back result
+                           if    ir(3 downto 0) = R0 then ld0 <= '1';
+                           elsif ir(3 downto 0) = R1 then ld1 <= '1';
+                           elsif ir(3 downto 0) = R2 then ld2 <= '1';
+                           elsif ir(3 downto 0) = R3 then ld3 <= '1';  
+                           end if;
+                           -- return to fetch1
+                           timer_ctrl <= T_LOAD;    
+        
         -- dec1
-        when others => -- MAR <= PC;
-                       -- decrement
-                       mux_ctrl <= ir (2 downto 0);
-                       alu_ctrl <= A_DEC;
-                       -- write back result
-                       if    ir(3 downto 0) = R0 then ld0 <= '1';
-                       elsif ir(3 downto 0) = R1 then ld1 <= '1';
-                       elsif ir(3 downto 0) = R2 then ld2 <= '1';
-                       elsif ir(3 downto 0) = R3 then ld3 <= '1';  
-                       end if;
-                       -- return to fetch1‚
+                             -- MAR <= PC;
+                             -- decrement
+        when DEC_CHOICE => mux_ctrl <= ir (2 downto 0);
+                           alu_ctrl <= A_DEC;
+                           -- write back result
+                           if    ir(3 downto 0) = R0 then ld0 <= '1';
+                           elsif ir(3 downto 0) = R1 then ld1 <= '1';
+                           elsif ir(3 downto 0) = R2 then ld2 <= '1';
+                           elsif ir(3 downto 0) = R3 then ld3 <= '1';  
+                           end if;
+                           -- return to fetch1‚
+                           timer_ctrl <= T_LOAD;
+        
+        -- bad instruction
+        when others => mux_ctrl <= "---";
                        timer_ctrl <= T_LOAD;
+	               
       end case;
     
     -- execute 2
-    elsif timer = x"3"
-      case ir (7 downto 4) is         
+    elsif timer = x"3" then
+      case ir(7 downto 4) is         
+         
         -- jmp2
-        when JMP    => --  PC = MEM[MAR]; (addr)
-                       pc_ce <= '1';
-                       pc_ctrl <= PC_MEM_IN;
-                       -- return to fetch1‚
-                       timer_ctrl <= T_LOAD;
+                            
+        when JMP_CHOICE => if ir(3 downto 0) = "0000" then
+                             -- PC = MEM[MAR]; (addr)
+                             pc_ce <= '1';
+                             pc_ctrl <= PC_MEM_IN;
+                             -- return to fetch1‚
+                             timer_ctrl <= T_LOAD;
+                           else
+                             -- bad instruction
+                              mux_ctrl <= "---";
+                              timer_ctrl <= T_LOAD;
+                           end if;
+ 
         -- jz2
-        when JZ     => if Zin = '1' then
-                         --  PC = MEM[MAR]; (addr)
-                         pc_ce <= '1';
-                         pc_ctrl <= PC_MEM_IN;
-                       else
-                         -- PC = PC + 1;
-                         pc_ce <= '1';
-                         mux_ctrl <= PC_IN;
-                         alu_ctrl <= A_INC;
-                       end if;
-                       -- return to fetch1‚
-                       timer_ctrl <= T_LOAD;
+        when  JZ_CHOICE => if Zin = '1' then
+                               --  PC = MEM[MAR]; (addr)
+                               pc_ce <= '1';
+                               pc_ctrl <= PC_MEM_IN;
+                             else
+                               -- PC = PC + 1;
+                               pc_ce <= '1';
+                               mux_ctrl <= PC_IN;
+                               alu_ctrl <= A_INC;
+                             end if;
+                             -- return to fetch1‚
+                             timer_ctrl <= T_LOAD;
         -- jnz2
-        when others => if Zin = '0' then
-                         --  PC = MEM[MAR]; (addr)
-                         pc_ce <= '1';
-                         pc_ctrl <= PC_MEM_IN;
-                       else
-                         -- PC = PC + 1;
-                         pc_ce <= '1';
-                         mux_ctrl <= PC_IN;
-                         alu_ctrl <= A_INC;
-                       end if;
-                       -- return to fetch1‚
-                       timer_ctrl <= T_LOAD;
+        when JNZ_CHOICE => if Zin = '0' then
+                               --  PC = MEM[MAR]; (addr)
+                               pc_ce <= '1';
+                               pc_ctrl <= PC_MEM_IN;
+                             else
+                               -- PC = PC + 1;
+                               pc_ce <= '1';
+                               mux_ctrl <= PC_IN;
+                               alu_ctrl <= A_INC;
+                             end if;
+                             -- return to fetch1‚
+                             timer_ctrl <= T_LOAD;
+        
+        -- bad instruction
+        when others => mux_ctrl <= "---";
+	               timer_ctrl <= T_LOAD;
       end case;
     end if;
   end process fsm_cu;
@@ -159,9 +193,9 @@ begin
     if reset = '1' then
       timer <= (others=>'0');
     elsif rising_edge(clk) then  
-      case timer_ctl is 
+      case timer_ctrl is 
         when T_INC  => timer <= timer + '1';
-        when T_LOAD => timer <= x"0";
+        when T_LOAD => timer <= "00";
       end case;
     end if;
   end process timer_mux_reg;  
@@ -195,7 +229,7 @@ begin
       pc <= (others=>'0');
     elsif rising_edge(clk) then
       if pc_ce = '1' then
-        case pc_ctl is 
+        case pc_ctrl is 
           when PC_ALU_IN => pc <= alu;
           when PC_MEM_IN => pc <= instruction;
         end case;
@@ -207,6 +241,8 @@ begin
   pc_out <= pc;
   addr <= mar;
 
+  -- debug output
+  timer_out <= timer;
 
 end behv;
 

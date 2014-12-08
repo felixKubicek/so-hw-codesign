@@ -23,25 +23,28 @@ begin
 	memory_process : process (inAddr, reset)
 	type ram is array (0 to max_ram_count) of TInstruction;
 	variable memory     : ram := (others => (others => '0'));
-
+	
 	begin
+          -- Test routine: add r0 <- r1,r2 
   	  if reset='1' then
-		memory(0) := jz & r2;     --Test on zero: if yes: jump to addr 5
-		memory(1) := "00000101";  --jump addr
-		memory(2) := dec & r2;   -- decrement register2
-		memory(3) := jnz & r2;   -- Test on zero, if not: jump to addr2 
-		memory(4) := "00000010";
-		memory(5) := jz & r3;
-		memory(6) := "00001001";
-		memory(7) := dec & r3;
-		memory(8) := jnz & r3;
-		memory(9) :=  "00000111";
-		memory(10) := "10000000";
-		memory(11) := "00000000";
-		memory(12) := "00000000";
+		memory(0) := jz & r1;    --Test on zero: if yes: jump to addr 6
+		memory(1) := "00000110"; --jump addr
+                memory(2) := dec & r1;   -- decrement register2
+		memory(3) := inc & r0;   -- increment source register r0
+		memory(4) := jnz & r1;   -- Test on zero, if not: jump to addr2 
+		memory(5) := "00000010";
+		memory(6) := jz & r2;
+		memory(7) := "00001100";
+                memory(8) := dec & r2;
+		memory(9) := inc & r0;
+		memory(10) := jnz & r2;
+		memory(11) := "00001000";
+		memory(12) := jmp;
 		memory(13) := "00000000";
 		memory(14) := "00000000";
 		memory(15) := "00000000";
+		memory(16) := "00000000";
+		memory(17) := "00000000";
 		
 	  end if; 
 	  instruction <= memory(conv_integer(unsigned(inAddr)));

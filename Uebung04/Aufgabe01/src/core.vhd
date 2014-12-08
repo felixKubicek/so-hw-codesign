@@ -12,8 +12,9 @@ entity core is
       reg1      : OUT TData;
       reg2      : OUT TData;
       reg3      : OUT TData;
+      reg1input : IN TData;
       reg2input : IN TData;
-      reg3input : IN TData
+      timer_debg : OUT std_logic_vector(1 downto 0)
       );
 end core;
 
@@ -44,10 +45,11 @@ begin
     ld2         => ld2_tmp,
     ld3         => ld3_tmp,
     mux_ctrl    => mux_ctrl_tmp,
-    alu_ctrl    => alu_ctrl_tmp
+    alu_ctrl    => alu_ctrl_tmp,
+    timer_out   => timer_debg
   );
   
-  DataPath : entity work.ctrlPath port map(
+  DataPath : entity work.dataPath port map(
     clk      => clk,  
     reset    => reset,
     ld0      => ld0_tmp,
@@ -56,8 +58,8 @@ begin
     ld3      => ld3_tmp,
     mux_ctrl => mux_ctrl_tmp,
     alu_ctrl => alu_ctrl_tmp,
+    r1in     => reg1input,
     r2in     => reg2input,
-    r3in     => reg3input,
     pcin     => pc_tmp,
     r0out    => reg0,
     r1out    => reg1,

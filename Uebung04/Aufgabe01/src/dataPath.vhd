@@ -1,4 +1,4 @@
-Library IEEE;
+library IEEE;
 use IEEE.std_logic_1164.ALL;
 use IEEE.std_logic_arith.ALL;
 use IEEE.std_logic_unsigned.ALL;
@@ -15,8 +15,8 @@ entity dataPath is
         ld3      : IN std_logic;
         mux_ctrl : IN std_logic_vector(2 downto 0);
         alu_ctrl : IN alu_mode;
+        r1in     : in  TData;
         r2in     : in  TData;
-        r3in     : in  TData;
         pcin     : in  TProgAddr;
         r0out    : out TData;
         r1out    : out TData;
@@ -27,20 +27,21 @@ entity dataPath is
       );
 end dataPath;
 
+architecture behv of dataPath is
+
 signal r0, r1, r2, r3 : TData;
 signal alu_in, alu_out : TData;
 signal z_flag : std_logic;
 
-architecture behv of dataPath is
 begin
   
   register_bank : process(clk, reset)  
   begin
     if reset = '1' then   
       r0 <= (others =>'0');      
-      r1 <= (others =>'0');      
-      r2 <= r2in, 
-      r3 <= r3in;      
+      r1 <= r1in; 
+      r2 <= r2in;      
+      r3 <= (others =>'0');      
     elsif rising_edge(clk) then
       if ld0 = '1' then
         r0 <= alu_out;
@@ -57,25 +58,25 @@ begin
     end if;    
   end process register_bank;
 
-  mux : process(mux_ctrl, r0, r1, r2, r3, pcin)
+  mux : process(mux_ctrl, r0, r1, r2, r3, pcin)  
   begin
-    case 0 & mux_ctrl is
-      when R0     => alu_in <= r0;
-      when R1     => alu_in <= r1;
-      when R2     => alu_in <= r2;
-      when R3     => alu_in <= r3;
+    case mux_ctrl is
+      when "000"     => alu_in <= r0;
+      when "001"     => alu_in <= r1;
+      when "010"     => alu_in <= r2;
+      when "011"     => alu_in <= r3;
       when others => alu_in <= pcin;
     end case;    
   end process mux;
 
-  alu : process(alu_ctrl, alu_in) 
+  alu_proc : process(alu_ctrl, alu_in) 
   begin
     case alu_ctrl is
       when  A_INC  => alu_out <= alu_in + '1';
       when  A_DEC  => alu_out <= alu_in - '1';
       when  A_TRAN => alu_out <= alu_in;
     end case;
-  end process alu;
+  end process alu_proc;
   
   status_reg : process(clk, reset)
   begin
@@ -93,7 +94,11 @@ begin
   
   Zout <= z_flag;
   alu <= alu_out;
-  (r0out, r1out, r2out, r3out) <= (r0, r1, r2, r3);
+  
+  r0out <= r0;
+  r1out <= r1;
+  r2out <= r2;
+  r3out <= r3;
   
 end behv;
 
